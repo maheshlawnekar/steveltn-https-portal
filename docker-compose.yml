@@ -1,0 +1,102 @@
+version: "3"
+#Added the -- docker system prune -a -f command in the dgbackend & dgfrontend pipleine 
+services:
+  tvcbackend:
+     image: registry.devshield.io/tvcbackend:dev0.0.14
+     restart: always
+
+  tvcfrontend:
+     image: registry.devshield.io/tvcfrontend:dev0.0.14
+
+  dgfrontend:
+    image: registry.devshield.io/dgfrontend:806
+      #ports:
+      #- 81:80
+    volumes:
+      - /home/tudipdev/videos:/usr/share/nginx/html/data/videos
+      - /home/tudipdev/images:/usr/share/nginx/html/data/images  
+
+  dgbackend:
+    image: registry.devshield.io/dgbackend:802
+    restart: always
+      #ports:
+      #- 3000:3000
+    volumes:
+      - /home/tudipdev/videos-backend/uploads:/usr/src/app/public/videos/uploads
+      - /home/tudipdev/images-backend/uploads:/usr/src/app/public/images/profiles/uploads
+    environment:
+      - dbHost=139.144.30.232
+      - dbPort=27017
+      - dbUsername=dgadmin
+      - dbPassword=Here2mongo!
+      - dbName=dg
+      - PORT=3000
+      - IOS_API_KEY=3c4afb4fd46352977647e980f67b7456
+      - ANDROID_API_KEY=1b0b3ff9876a5bf1d33f9767a7489a6f
+      - WEB_API_KEY=d71a0600eb536f75c2d6de65f18628b5
+      - auth0URL=http://dev-f3cfi-wk.us.auth0.com/userinfo
+      - API_URL=https://devdgapi.devshield.io
+      - LOGOUT_URL=https://devdg.devshield.io
+      - AUTH0_DOMAIN=dev-f3cfi-wk.us.auth0.com
+      - CLIENT_ID=PKkmauYUBBe9gNDEs0QrmgPYCR0kuCdR
+      - AUTH0_CLIENT_ID=PKkmauYUBBe9gNDEs0QrmgPYCR0kuCdR
+      - AUTH0_CLIENT_SECRET=mlhk7rQQ7W5plPLhs6kWOX1anN4gE87PvjbvDGgC893SCSbC1g0too1qCX1QTrad
+      - WEBSOCKET=true
+
+    expose:
+      - "3000"  # Expose the WebSocket port
+
+
+
+  wayfinderfrontend:
+     image: way-finder-web
+     restart: always
+
+  wayfinderbackend:
+    image: app.js
+    restart: always
+    environment:
+      - dbHost=139.144.30.232
+      - dbPort=27017
+      - dbUsername=wayfinder
+      - dbPassword=4n16JJhaL8r
+      - dbName=wayfinder
+      - PORT=3000
+      - IOS_API_KEY=3c4afb4fd46352977647e980f67b7456
+      - ANDROID_API_KEY=1b0b3ff9876a5bf1d33f9767a7489a6f
+      - WEB_API_KEY=d71a0600eb536f75c2d6de65f18628b5
+      - auth0URL=http://wayfinder-dev.us.auth0.com/userinfo
+      - API_URL=https://wayfinderapi.devshield.io
+      - LOGOUT_URL=https://wayfinder.devshield.io
+      - AUTH0_DOMAIN=wayfinder-dev.us.auth0.com
+      - CLIENT_ID=s4ARZau4PzH8ZsWntwtPg0opM29yWBUM
+      - AUTH0_CLIENT_ID=s4ARZau4PzH8ZsWntwtPg0opM29yWBUM
+      - AUTH0_CLIENT_SECRET=rS3-Ir1IVpRLtRrKYJQ4e7IM8gNnKMe8QwEjfcvnAKYJHOQR4PVgj59aIFhrRJvx
+      - WEBSOCKET=true
+
+  https-portal:
+    image: steveltn/https-portal:latest
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ssl-certs:/var/lib/https-portal
+    environment:
+      DOMAINS: 'wayfinder.devshield.io -> http://wayfinderfrontend:80, wayfinderapi.devshield.io -> http://wayfinderbackend:3000, tvcapi.devshield.io -> http://tvcbackend:3000, tvc.devshield.io -> http://tvcfrontend:80, devdgapi.devshield.io -> http://dgbackend:3000, devdg.devshield.io -> http://dgfrontend:80'
+      CLIENT_MAX_BODY_SIZE: 1000M      
+      STAGE: 'production'
+         # EMAIL: 'acme-v02.api.letsencrypt.org'  
+       #FORCE_RENEW: 'true'
+     #volumes:
+       # - /etc/letsencrypt:/etc/letsencrypt  
+       # - .nginx/nginx-conf/conf.d:/etc/https-portal/conf.d 
+    depends_on:
+      - tvcbackend
+      - tvcfrontend
+      - dgfrontend
+      - dgbackend
+      - wayfinderbackend
+      - wayfinderfrontend
+volumes:
+  ssl-certs
